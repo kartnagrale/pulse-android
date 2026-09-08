@@ -1,11 +1,16 @@
 package com.samruddhi.bloom
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -51,13 +56,22 @@ class ReminderReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            val notification = NotificationCompat.Builder(context, "bloom_alarms")
+            val savedSound = prefs.getString("alarm_uri", "") ?: ""
+            val soundUri: Uri = if (savedSound.isBlank()) {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            } else {
+                Uri.parse(savedSound)
+            }
+            val channelId = ensureAlarmChannel(context, soundUri)
+
+            val notification = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-                .setCategory(NotificationCompat.CATEGORY_REMINDER)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setContentIntent(alarmScreen)
@@ -77,5 +91,30 @@ class ReminderReceiver : BroadcastReceiver() {
 
             NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
         }
+    }
+
+    private fun ensureAlarmChannel(context: Context, soundUri: Uri): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return "bloom_alarms"
+
+        val channelId = "bloom_alarm_${soundUri.toString().hashCode()}"
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (manager.getNotificationChannel(channelId) == null) {
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            val channel = NotificationChannel(
+                channelId,
+                "Bloom alarm reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Audible alarm-style task reminders"
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                enableVibration(true)
+                setSound(soundUri, audioAttributes)
+            }
+            manager.createNotificationChannel(channel)
+        }
+        return channelId
     }
 }
