@@ -43,9 +43,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 putExtra("taskId", taskId)
                 putExtra("title", title)
                 putExtra("body", body)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
-            val fullScreenIntent = PendingIntent.getActivity(
+            val alarmScreen = PendingIntent.getActivity(
                 context,
                 (taskId xor 0x5A5A).hashCode(),
                 alarmIntent,
@@ -57,13 +56,11 @@ class ReminderReceiver : BroadcastReceiver() {
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOngoing(true)
-                .setAutoCancel(false)
-                .setContentIntent(fullScreenIntent)
-                .setFullScreenIntent(fullScreenIntent, true)
+                .setAutoCancel(true)
+                .setContentIntent(alarmScreen)
                 .build()
 
             NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
