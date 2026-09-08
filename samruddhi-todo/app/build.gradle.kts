@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.samruddhi.bloom"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.samruddhi.bloom"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
 
     compileOptions {
@@ -23,6 +23,13 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            isDebuggable = false
+        }
+    }
 }
 
 dependencies {
