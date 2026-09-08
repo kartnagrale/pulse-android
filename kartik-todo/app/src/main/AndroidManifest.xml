@@ -13,23 +13,23 @@
         android:theme="@style/Theme.Bloom">
 
         <activity
-            android:name=".AboutPrivacyActivity"
+            android:name="com.samruddhi.bloom.AboutPrivacyActivity"
             android:exported="true"
             android:label="@string/about_privacy_title" />
 
         <activity
-            android:name=".AlarmActivity"
+            android:name="com.samruddhi.bloom.AlarmActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:excludeFromRecents="true" />
 
         <receiver
-            android:name=".ReminderReceiver"
+            android:name="com.samruddhi.bloom.ReminderReceiver"
             android:exported="false" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.samruddhi.bloom.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
