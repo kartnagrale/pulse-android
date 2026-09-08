@@ -14,39 +14,71 @@ class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
-        createReminderChannel(context)
+        createReminderChannels(context)
 
         val taskId = intent.getLongExtra("taskId", System.currentTimeMillis())
         val title = intent.getStringExtra("title") ?: "Bloom task"
         val dueTime = intent.getStringExtra("dueTime") ?: "soon"
         val reminderMinutes = intent.getIntExtra("reminderMinutes", 0)
-
-        val launchIntent = Intent(context, MainActivity::class.java)
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            taskId.hashCode(),
-            launchIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val prefs = context.getSharedPreferences("bloom_prefs", Context.MODE_PRIVATE)
+        val mode = prefs.getString("reminder_mode", "notification") ?: "notification"
 
         val body = when (reminderMinutes) {
-            0 -> "It’s time: $title"
-            15 -> "Coming up in 15 minutes • $dueTime"
-            30 -> "Coming up in 30 minutes • $dueTime"
-            60 -> "Coming up in 1 hour • $dueTime"
+            0 -> "It’s time for this task"
+            15 -> "Starts in 15 minutes • $dueTime"
+            30 -> "Starts in 30 minutes • $dueTime"
+            60 -> "Starts in 1 hour • $dueTime"
             else -> "Coming up soon • $dueTime"
         }
 
-        val notification = NotificationCompat.Builder(context, "bloom_reminders")
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(contentIntent)
-            .build()
+        val launchMain = PendingIntent.getActivity(
+            context,
+            taskId.hashCode(),
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
+        if (mode == "alarm") {
+            val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                putExtra("taskId", taskId)
+                putExtra("title", title)
+                putExtra("body", body)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            val fullScreenIntent = PendingIntent.getActivity(
+                context,
+                (taskId xor 0x5A5A).hashCode(),
+                alarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val notification = NotificationCompat.Builder(context, "bloom_alarms")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setContentIntent(fullScreenIntent)
+                .setFullScreenIntent(fullScreenIntent, true)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
+        } else {
+            val notification = NotificationCompat.Builder(context, "bloom_reminders")
+                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(launchMain)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
+        }
     }
 }
