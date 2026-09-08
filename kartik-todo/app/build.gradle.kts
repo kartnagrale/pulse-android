@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.samruddhi.bloom"
+    namespace = "com.kartik.bloom"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.samruddhi.bloom"
+        applicationId = "com.kartik.bloom"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
