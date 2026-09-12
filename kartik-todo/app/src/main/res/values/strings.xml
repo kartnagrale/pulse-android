@@ -3,4 +3,5 @@
     <string name="app_name">Bloom</string>
     <string name="about_privacy_title">About &amp; Privacy</string>
     <string name="about_privacy_shortcut">About &amp; privacy</string>
+    <string name="quick_add_shortcut">Quick add</string>
 </resources>
