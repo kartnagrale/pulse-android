@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -12,35 +11,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Bloom">
 
-        <activity
-            android:name="com.kartik.bloom.AboutPrivacyActivity"
-            android:exported="false"
-            android:label="@string/about_privacy_title" />
-
-        <receiver
-            android:name="com.kartik.bloom.ReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name="com.kartik.bloom.BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
+        <activity android:name="com.kartik.bloom.AboutPrivacyActivity" android:exported="false" android:label="@string/about_privacy_title" />
+        <receiver android:name="com.kartik.bloom.ReminderReceiver" android:exported="false" />
+        <receiver android:name="com.kartik.bloom.BootReceiver" android:enabled="true" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+        </receiver>
+        <receiver android:name="com.kartik.bloom.BloomWidget" android:exported="true">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/bloom_widget_info" />
         </receiver>
 
-        <activity
-            android:name="com.kartik.bloom.MainActivity"
-            android:exported="true"
-            android:screenOrientation="portrait">
+        <activity android:name="com.kartik.bloom.MainActivity" android:exported="true" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
     </application>
 </manifest>
