@@ -37,14 +37,14 @@ jobs:
 
       - name: Copy unsigned validation bundle
         if: ${{ github.event_name == 'push' }}
-        run: cp app/build/outputs/bundle/release/app-release.aab ../Bloom-1.1.0-unsigned.aab
+        run: cp app/build/outputs/bundle/release/app-release.aab ../Bloom-1.2.0-unsigned.aab
 
       - name: Upload unsigned validation AAB
         if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Bloom-1.1.0-unsigned-AAB
-          path: Bloom-1.1.0-unsigned.aab
+          name: Bloom-1.2.0-unsigned-AAB
+          path: Bloom-1.2.0-unsigned.aab
           if-no-files-found: error
 
       - name: Validate signing secrets
@@ -73,21 +73,21 @@ jobs:
           KEY_ALIAS: ${{ secrets.BLOOM_UPLOAD_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.BLOOM_UPLOAD_KEY_PASSWORD }}
         run: |
-          cp app/build/outputs/bundle/release/app-release.aab ../Bloom-1.1.0.aab
+          cp app/build/outputs/bundle/release/app-release.aab ../Bloom-1.2.0.aab
           jarsigner \
             -sigalg SHA256withRSA \
             -digestalg SHA-256 \
             -keystore bloom-upload-key.jks \
             -storepass "$STORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
-            ../Bloom-1.1.0.aab \
+            ../Bloom-1.2.0.aab \
             "$KEY_ALIAS"
-          jarsigner -verify ../Bloom-1.1.0.aab
+          jarsigner -verify ../Bloom-1.2.0.aab
 
       - name: Upload signed Play AAB
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Bloom-1.1.0-Play-AAB
-          path: Bloom-1.1.0.aab
+          name: Bloom-1.2.0-Play-AAB
+          path: Bloom-1.2.0.aab
           if-no-files-found: error
