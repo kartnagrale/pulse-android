@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Required only for task reminders on Android 13+. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -13,23 +13,25 @@
         android:theme="@style/Theme.Bloom">
 
         <activity
-            android:name="com.samruddhi.bloom.AboutPrivacyActivity"
-            android:exported="true"
+            android:name="com.kartik.bloom.AboutPrivacyActivity"
+            android:exported="false"
             android:label="@string/about_privacy_title" />
 
-        <activity
-            android:name="com.samruddhi.bloom.AlarmActivity"
-            android:exported="false"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true" />
-
         <receiver
-            android:name="com.samruddhi.bloom.ReminderReceiver"
+            android:name="com.kartik.bloom.ReminderReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name="com.kartik.bloom.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <activity
-            android:name="com.samruddhi.bloom.MainActivity"
+            android:name="com.kartik.bloom.MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
