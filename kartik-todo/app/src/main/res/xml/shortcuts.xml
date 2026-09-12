@@ -4,7 +4,7 @@
         android:shortcutId="quick_add"
         android:enabled="true"
         android:icon="@drawable/ic_launcher"
-        android:shortcutShortLabel="Quick add">
+        android:shortcutShortLabel="@string/quick_add_shortcut">
         <intent
             android:action="com.kartik.bloom.QUICK_ADD"
             android:targetPackage="com.kartik.bloom"
@@ -14,7 +14,7 @@
         android:shortcutId="about_privacy"
         android:enabled="true"
         android:icon="@drawable/ic_launcher"
-        android:shortcutShortLabel="About &amp; privacy">
+        android:shortcutShortLabel="@string/about_privacy_shortcut">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.kartik.bloom"
