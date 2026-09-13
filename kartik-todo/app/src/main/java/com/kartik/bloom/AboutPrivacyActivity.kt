@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -42,15 +42,15 @@ private fun AboutPrivacyScreen() {
     ) {
         item {
             Text("Bloom", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Version 1.4.0 • A focused productivity planner by Kynure Labs", color = Color(0xFF817985))
+            Text("Version 1.4.1 • A focused productivity planner by Kynure Labs", color = Color(0xFF817985))
         }
         item { InfoCard("Privacy") { Text("Bloom is offline-first. Your name, tasks, subtasks, priorities, estimates, recurrence settings, reminder times, focus history, completion state, theme and reminder preferences are stored locally on your device.") } }
-        item { InfoCard("Data collection") { Text("Bloom 1.4.0 has no account system, advertising SDK, analytics SDK or third-party tracking SDK. Your task list is not sent to a Kynure Labs server.") } }
+        item { InfoCard("Data collection") { Text("Bloom 1.4.1 has no account system, advertising SDK, analytics SDK or third-party tracking SDK. Your task list is not sent to a Kynure Labs server.") } }
         item { InfoCard("Notifications & reminders") { Text("Bloom requests notification permission only to show task reminders. Recurring reminders and snoozes are scheduled locally using Android alarm APIs and are restored after a device reboot.") } }
         item { InfoCard("Alarm sounds") { Text("If you choose Alarm mode, Bloom can use your phone’s default alarm sound or a sound you select using Android’s system ringtone picker.") } }
         item { InfoCard("Focus & statistics") { Text("Focus sessions and productivity statistics are calculated from locally stored task history. Bloom does not upload this productivity data.") } }
         item { InfoCard("Delete your data") { Text("Delete individual tasks inside Bloom, or clear the app’s storage / uninstall Bloom to remove locally stored app data from the device.") } }
-        item { InfoCard("Support") { Text("Public support: kartiklabs.apps@gmail.com\nDeveloper account: kartiklabs.dev@gmail.com") } }
+        item { InfoCard("Support") { Text("KynureLabs.dev@gmail.com") } }
         item { Text("Built by Kynure Labs • com.kynurelabs.bloom", modifier = Modifier.padding(top = 8.dp), color = Color(0xFF817985), fontSize = 13.sp) }
     }
 }

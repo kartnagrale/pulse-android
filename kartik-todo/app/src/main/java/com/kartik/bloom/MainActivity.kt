@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.Manifest
 import android.app.DatePickerDialog
@@ -50,7 +50,7 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val quickAdd = intent.getBooleanExtra("quick_add", false) || intent.action == "com.kartiklabs.bloom.QUICK_ADD"
+        val quickAdd = intent.getBooleanExtra("quick_add", false) || intent.action == "com.kynurelabs.bloom.QUICK_ADD"
         setContent { BloomApp(startQuickAdd = quickAdd) }
     }
 }
@@ -291,17 +291,17 @@ private fun TodayScreen(
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("All") }
     var status by remember { mutableStateOf("Open") }
-    val filtered = tasks.filter { t ->
+    val todayOpenTasks = visibleTodayTasks(tasks, today)
+    val filtered = todayOpenTasks.filter { t ->
         val matchesQuery = query.isBlank() || t.title.contains(query, true) || t.notes.contains(query, true) || t.subtasks.any { it.title.contains(query, true) }
         val matchesCategory = category == "All" || t.category == category
         val matchesStatus = when (status) {
-            "Done" -> t.done
-            "Overdue" -> !t.done && runCatching { LocalDate.parse(t.due).isBefore(today) }.getOrDefault(false)
             "Recurring" -> t.recurrence != Recurrence.NONE
-            else -> !t.done
+            "Done", "Overdue" -> false
+            else -> true
         }
         matchesQuery && matchesCategory && matchesStatus
-    }.sortedWith(compareByDescending<BloomTask> { smartTaskScore(it, today) }.thenBy { it.due }.thenBy { it.time })
+    }.sortedWith(compareByDescending<BloomTask> { smartTaskScore(it, today) }.thenBy { it.time })
     val todayTasks = tasks.filter { it.due == today.toString() }
     val doneToday = todayTasks.count { it.done || it.lastCompleted == today.toString() }
 
@@ -323,7 +323,16 @@ private fun TodayScreen(
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) { listOf("Open", "Overdue", "Recurring", "Done").forEach { s -> FilterChip(status == s, { status = s }, { Text(s) }) } }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Open", "Overdue", "Recurring", "Done").forEach { s ->
+                        FilterChip(
+                            selected = status == s,
+                            onClick = { status = s },
+                            label = { Text(s, maxLines = 1, fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) { listOf("All", "Personal", "Work", "Health").forEach { c -> FilterChip(category == c, { category = c }, { Text(c) }) } }
             }
         }
@@ -335,9 +344,8 @@ private fun TodayScreen(
 @Composable
 private fun SmartPlanCard(tasks: List<BloomTask>, onFocus: (BloomTask) -> Unit) {
     val today = LocalDate.now()
-    val open = tasks.filter { !it.done }
-    val actionable = open.filter { runCatching { !LocalDate.parse(it.due).isAfter(today) }.getOrDefault(false) }
-    val plan = (if (actionable.isNotEmpty()) actionable else open).sortedByDescending { smartTaskScore(it, today) }.take(3)
+    val actionable = visibleTodayTasks(tasks, today)
+    val plan = actionable.sortedByDescending { smartTaskScore(it, today) }.take(3)
     val minutes = actionable.sumOf { it.estimatedMinutes }
     val overload = minutes > 8 * 60
     Card(shape = RoundedCornerShape(26.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(.55f))) {
@@ -351,7 +359,12 @@ private fun SmartPlanCard(tasks: List<BloomTask>, onFocus: (BloomTask) -> Unit) 
             else {
                 plan.forEachIndexed { index, task ->
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${index + 1}", modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(.15f)).padding(top = 2.dp), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Box(
+                            modifier = Modifier.size(26.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("${index + 1}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                         Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                             Text(task.title, fontWeight = FontWeight.SemiBold, maxLines = 1)
                             Text("${task.priority.label} · ${formatDuration(task.estimatedMinutes)} · ${dueLabel(task.due)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(.58f))

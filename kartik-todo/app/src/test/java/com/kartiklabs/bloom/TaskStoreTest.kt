@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

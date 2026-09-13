@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "com.kartiklabs.bloom"
+    namespace = "com.kynurelabs.bloom"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.kynurelabs.bloom"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.4.0"
+        versionCode = 6
+        versionName = "1.4.1"
     }
 
     compileOptions {

@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.content.BroadcastReceiver
 import android.content.Context

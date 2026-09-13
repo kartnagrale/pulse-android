@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.Manifest
 import android.app.PendingIntent
@@ -75,5 +75,5 @@ class ReminderReceiver : BroadcastReceiver() {
         return PendingIntent.getBroadcast(context, taskId.hashCode() xor (9000 + salt), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
-    companion object { const val ACTION_SNOOZE = "com.kartiklabs.bloom.SNOOZE" }
+    companion object { const val ACTION_SNOOZE = "com.kynurelabs.bloom.SNOOZE" }
 }

@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.content.Context
 import org.json.JSONArray
@@ -104,6 +104,9 @@ fun nextOccurrence(date: LocalDate, task: BloomTask): LocalDate {
     val end = runCatching { LocalDate.parse(task.repeatEnd) }.getOrNull()
     return if (end != null && next.isAfter(end)) date else next
 }
+
+fun visibleTodayTasks(tasks: List<BloomTask>, today: LocalDate = LocalDate.now()): List<BloomTask> =
+    tasks.filter { task -> !task.done && task.due == today.toString() }
 
 fun smartTaskScore(task: BloomTask, today: LocalDate = LocalDate.now()): Int {
     val due = runCatching { LocalDate.parse(task.due) }.getOrDefault(today)

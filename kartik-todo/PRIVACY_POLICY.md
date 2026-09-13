@@ -15,7 +15,7 @@ Bloom stores the following information locally on the user's device:
 - the URI/reference of a device sound selected for alarm-style reminders.
 
 ## Data collection and sharing
-Bloom 1.4.0 does not include an account system, advertising SDK, analytics SDK or third-party tracking SDK. Bloom does not transmit the user's task list, focus history or profile information to a Kynure Labs server.
+Bloom 1.4.1 does not include an account system, advertising SDK, analytics SDK or third-party tracking SDK. Bloom does not transmit the user's task list, focus history or profile information to a Kynure Labs server.
 
 ## Permissions
 Bloom may request notification permission so it can display task reminders. Reminder scheduling uses Android's local alarm APIs. Bloom requests the boot-completed permission only so one-time and recurring reminders can be restored locally after the device restarts. If the user chooses a sound from the device, Android's system picker is used.
@@ -36,7 +36,6 @@ Bloom is a general productivity application and is not specifically directed to 
 This policy may be updated when Bloom's features or data practices change. The effective date at the top will be updated accordingly.
 
 ## Contact
-Public support: **kartiklabs.apps@gmail.com**  
-Developer account: **kartiklabs.dev@gmail.com**
+Support: **KynureLabs.dev@gmail.com**
 
 Package name: **com.kynurelabs.bloom**

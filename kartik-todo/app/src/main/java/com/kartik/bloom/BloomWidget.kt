@@ -1,4 +1,4 @@
-package com.kartiklabs.bloom
+package com.kynurelabs.bloom
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
