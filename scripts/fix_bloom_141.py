@@ -140,12 +140,4 @@ if tests.exists():
         t = t[:pos] + insert + t[pos:]
         tests.write_text(t, encoding="utf-8")
 
-# Artifact names.
-for wf in [Path(".github/workflows/build-bloom-apk.yml"), Path(".github/workflows/build-bloom-release.yml")]:
-    if wf.exists():
-        text = wf.read_text(encoding="utf-8")
-        text = text.replace("1.3.0", "1.4.1").replace("1.4.0", "1.4.1")
-        text = text.replace("KartikLabs", "KynureLabs")
-        wf.write_text(text, encoding="utf-8")
-
 print("Bloom 1.4.1 fixes applied")
