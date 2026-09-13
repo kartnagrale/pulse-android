@@ -1,4 +1,4 @@
-package com.kartik.bloom
+package com.kartiklabs.bloom
 
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -76,9 +76,13 @@ fun scheduleTaskReminder(context: Context, task: BloomTask, occurrenceDate: Loca
 
 private fun scheduleAt(context: Context, task: BloomTask, whenDateTime: LocalDateTime, occurrenceDate: LocalDate, requestCode: Int) {
     val intent = Intent(context, ReminderReceiver::class.java).apply {
-        putExtra("taskId", task.id); putExtra("title", task.title); putExtra("dueTime", formatTaskTime(task.time))
-        putExtra("reminderMinutes", task.reminderMinutes); putExtra("recurrence", task.recurrence.name)
-        putExtra("occurrenceDate", occurrenceDate.toString()); putExtra("notes", task.notes)
+        putExtra("taskId", task.id)
+        putExtra("title", task.title)
+        putExtra("dueTime", formatTaskTime(task.time))
+        putExtra("reminderMinutes", task.reminderMinutes)
+        putExtra("recurrence", task.recurrence.name)
+        putExtra("occurrenceDate", occurrenceDate.toString())
+        putExtra("notes", task.notes)
     }
     val pending = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     val millis = whenDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
