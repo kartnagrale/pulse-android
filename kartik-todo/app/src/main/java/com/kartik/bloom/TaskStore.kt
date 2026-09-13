@@ -7,6 +7,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 const val BLOOM_PREFS = "bloom_prefs"
+private const val KEY_TASKS = "tasks"
+private const val KEY_TASKS_BACKUP = "tasks_backup"
+private const val KEY_HISTORY = "history"
+private const val KEY_HISTORY_BACKUP = "history_backup"
 
 enum class Recurrence {
     NONE, DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM;
@@ -141,28 +145,43 @@ fun saveTasks(context: Context, tasks: List<BloomTask>) {
                 .put("weekdays", JSONArray(task.weekdays.toList()))
         )
     }
-    context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
-        .edit().putString("tasks", array.toString()).apply()
+    val prefs = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
+    val previous = prefs.getString(KEY_TASKS, null)
+    prefs.edit().apply {
+        if (!previous.isNullOrBlank()) putString(KEY_TASKS_BACKUP, previous)
+        putString(KEY_TASKS, array.toString())
+    }.apply()
     BloomWidget.updateAll(context)
 }
 
 fun loadTasks(context: Context): List<BloomTask> {
-    val raw = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
-        .getString("tasks", null) ?: return emptyList()
+    val prefs = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
+    val primary = prefs.getString(KEY_TASKS, null)
+    parseTasks(primary)?.let { return it }
+
+    val backup = prefs.getString(KEY_TASKS_BACKUP, null)
+    val recovered = parseTasks(backup) ?: return emptyList()
+    if (!backup.isNullOrBlank()) prefs.edit().putString(KEY_TASKS, backup).apply()
+    return recovered
+}
+
+private fun parseTasks(raw: String?): List<BloomTask>? {
+    if (raw.isNullOrBlank()) return emptyList()
     return runCatching {
         val array = JSONArray(raw)
         buildList {
             for (i in 0 until array.length()) {
                 val o = array.getJSONObject(i)
                 val days = mutableSetOf<Int>()
-                o.optJSONArray("weekdays")?.let { a -> for (j in 0 until a.length()) days += a.optInt(j) }
+                o.optJSONArray("weekdays")?.let { a -> for (j in 0 until a.length()) a.optInt(j).takeIf { it in 1..7 }?.let(days::add) }
                 val subtasks = mutableListOf<Subtask>()
                 o.optJSONArray("subtasks")?.let { a ->
                     for (j in 0 until a.length()) {
                         val s = a.getJSONObject(j)
+                        val title = s.optString("title", "Step").trim().ifBlank { "Step" }
                         subtasks += Subtask(
                             id = s.optLong("id", System.currentTimeMillis() + j),
-                            title = s.optString("title", "Step"),
+                            title = title,
                             done = s.optBoolean("done", false)
                         )
                     }
@@ -170,19 +189,19 @@ fun loadTasks(context: Context): List<BloomTask> {
                 add(
                     BloomTask(
                         id = o.optLong("id", System.currentTimeMillis() + i),
-                        title = o.optString("title", "Task"),
+                        title = o.optString("title", "Task").trim().ifBlank { "Task" },
                         category = o.optString("category", "Personal"),
                         due = o.optString("due", LocalDate.now().toString()),
                         time = o.optString("time", "09:00"),
-                        reminderMinutes = o.optInt("reminderMinutes", 0),
+                        reminderMinutes = o.optInt("reminderMinutes", 0).coerceAtLeast(0),
                         recurrence = runCatching { Recurrence.valueOf(o.optString("recurrence", "NONE")) }.getOrDefault(Recurrence.NONE),
-                        repeatEvery = o.optInt("repeatEvery", 1),
+                        repeatEvery = o.optInt("repeatEvery", 1).coerceAtLeast(1),
                         repeatUnit = o.optString("repeatUnit", "days"),
                         weekdays = days,
                         repeatEnd = o.optString("repeatEnd", ""),
                         notes = o.optString("notes", ""),
                         priority = runCatching { Priority.valueOf(o.optString("priority", "MEDIUM")) }.getOrDefault(Priority.MEDIUM),
-                        estimatedMinutes = o.optInt("estimatedMinutes", 30).coerceAtLeast(5),
+                        estimatedMinutes = o.optInt("estimatedMinutes", 30).coerceIn(5, 12 * 60),
                         subtasks = subtasks,
                         done = o.optBoolean("done", false),
                         lastCompleted = o.optString("lastCompleted", "")
@@ -190,7 +209,7 @@ fun loadTasks(context: Context): List<BloomTask> {
                 )
             }
         }
-    }.getOrDefault(emptyList())
+    }.getOrNull()
 }
 
 fun addHistory(context: Context, event: HistoryEvent) {
@@ -205,20 +224,41 @@ fun saveHistory(context: Context, events: List<HistoryEvent>) {
         array.put(JSONObject().put("id", e.id).put("taskId", e.taskId).put("title", e.title)
             .put("action", e.action).put("timestamp", e.timestamp).put("detail", e.detail))
     }
-    context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
-        .edit().putString("history", array.toString()).apply()
+    val prefs = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
+    val previous = prefs.getString(KEY_HISTORY, null)
+    prefs.edit().apply {
+        if (!previous.isNullOrBlank()) putString(KEY_HISTORY_BACKUP, previous)
+        putString(KEY_HISTORY, array.toString())
+    }.apply()
 }
 
 fun loadHistory(context: Context): List<HistoryEvent> {
-    val raw = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
-        .getString("history", null) ?: return emptyList()
+    val prefs = context.getSharedPreferences(BLOOM_PREFS, Context.MODE_PRIVATE)
+    val primary = prefs.getString(KEY_HISTORY, null)
+    parseHistory(primary)?.let { return it }
+
+    val backup = prefs.getString(KEY_HISTORY_BACKUP, null)
+    val recovered = parseHistory(backup) ?: return emptyList()
+    if (!backup.isNullOrBlank()) prefs.edit().putString(KEY_HISTORY, backup).apply()
+    return recovered
+}
+
+private fun parseHistory(raw: String?): List<HistoryEvent>? {
+    if (raw.isNullOrBlank()) return emptyList()
     return runCatching {
         val a = JSONArray(raw)
         buildList {
             for (i in 0 until a.length()) {
                 val o = a.getJSONObject(i)
-                add(HistoryEvent(o.optLong("id"), o.optLong("taskId"), o.optString("title"), o.optString("action"), o.optString("timestamp"), o.optString("detail")))
+                add(HistoryEvent(
+                    o.optLong("id"),
+                    o.optLong("taskId"),
+                    o.optString("title"),
+                    o.optString("action"),
+                    o.optString("timestamp"),
+                    o.optString("detail")
+                ))
             }
         }
-    }.getOrDefault(emptyList())
+    }.getOrNull()
 }
