@@ -1,0 +1,151 @@
+from pathlib import Path
+
+root = Path("kartik-todo")
+
+# Finalize the Kynure Labs package namespace and contact identity.
+text_exts = {".kt", ".kts", ".xml", ".md", ".yml", ".yaml", ".properties"}
+for path in root.rglob("*"):
+    if path.is_file() and path.suffix in text_exts:
+        text = path.read_text(encoding="utf-8")
+        new = text.replace("com.kartiklabs.bloom", "com.kynurelabs.bloom")
+        new = new.replace("kartiklabs.apps@gmail.com", "KynureLabs.dev@gmail.com")
+        new = new.replace("kartiklabs.dev@gmail.com", "KynureLabs.dev@gmail.com")
+        if new != text:
+            path.write_text(new, encoding="utf-8")
+
+# Version bump.
+gradle = root / "app/build.gradle.kts"
+text = gradle.read_text(encoding="utf-8")
+text = text.replace("versionCode = 5", "versionCode = 6")
+text = text.replace('versionName = "1.4.0"', 'versionName = "1.4.1"')
+gradle.write_text(text, encoding="utf-8")
+
+# Today screen: only unfinished tasks due today, Smart Today only today,
+# centered rank badge, and one-line status chips.
+main = root / "app/src/main/java/com/kartik/bloom/MainActivity.kt"
+text = main.read_text(encoding="utf-8")
+
+old = '''    val filtered = tasks.filter { t ->
+        val matchesQuery = query.isBlank() || t.title.contains(query, true) || t.notes.contains(query, true) || t.subtasks.any { it.title.contains(query, true) }
+        val matchesCategory = category == "All" || t.category == category
+        val matchesStatus = when (status) {
+            "Done" -> t.done
+            "Overdue" -> !t.done && runCatching { LocalDate.parse(t.due).isBefore(today) }.getOrDefault(false)
+            "Recurring" -> t.recurrence != Recurrence.NONE
+            else -> !t.done
+        }
+        matchesQuery && matchesCategory && matchesStatus
+    }.sortedWith(compareByDescending<BloomTask> { smartTaskScore(it, today) }.thenBy { it.due }.thenBy { it.time })'''
+new = '''    val todayOpenTasks = visibleTodayTasks(tasks, today)
+    val filtered = todayOpenTasks.filter { t ->
+        val matchesQuery = query.isBlank() || t.title.contains(query, true) || t.notes.contains(query, true) || t.subtasks.any { it.title.contains(query, true) }
+        val matchesCategory = category == "All" || t.category == category
+        val matchesStatus = when (status) {
+            "Recurring" -> t.recurrence != Recurrence.NONE
+            "Done", "Overdue" -> false
+            else -> true
+        }
+        matchesQuery && matchesCategory && matchesStatus
+    }.sortedWith(compareByDescending<BloomTask> { smartTaskScore(it, today) }.thenBy { it.time })'''
+if old not in text:
+    raise RuntimeError("Today filter target not found")
+text = text.replace(old, new)
+
+old = '                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) { listOf("Open", "Overdue", "Recurring", "Done").forEach { s -> FilterChip(status == s, { status = s }, { Text(s) }) } }'
+new = '''                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Open", "Overdue", "Recurring", "Done").forEach { s ->
+                        FilterChip(
+                            selected = status == s,
+                            onClick = { status = s },
+                            label = { Text(s, maxLines = 1, fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }'''
+if old not in text:
+    raise RuntimeError("Status-chip target not found")
+text = text.replace(old, new)
+
+old = '''    val open = tasks.filter { !it.done }
+    val actionable = open.filter { runCatching { !LocalDate.parse(it.due).isAfter(today) }.getOrDefault(false) }
+    val plan = (if (actionable.isNotEmpty()) actionable else open).sortedByDescending { smartTaskScore(it, today) }.take(3)'''
+new = '''    val actionable = visibleTodayTasks(tasks, today)
+    val plan = actionable.sortedByDescending { smartTaskScore(it, today) }.take(3)'''
+if old not in text:
+    raise RuntimeError("Smart Today target not found")
+text = text.replace(old, new)
+
+old = '                        Text("${index + 1}", modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(.15f)).padding(top = 2.dp), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)'
+new = '''                        Box(
+                            modifier = Modifier.size(26.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("${index + 1}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }'''
+if old not in text:
+    raise RuntimeError("Smart Today rank target not found")
+text = text.replace(old, new)
+main.write_text(text, encoding="utf-8")
+
+# Testable helper for the Today contract.
+store = root / "app/src/main/java/com/kartik/bloom/TaskStore.kt"
+text = store.read_text(encoding="utf-8")
+anchor = "fun smartTaskScore(task: BloomTask, today: LocalDate = LocalDate.now()): Int {"
+helper = '''fun visibleTodayTasks(tasks: List<BloomTask>, today: LocalDate = LocalDate.now()): List<BloomTask> =
+    tasks.filter { task -> !task.done && task.due == today.toString() }
+
+'''
+if "fun visibleTodayTasks(" not in text:
+    if anchor not in text:
+        raise RuntimeError("TaskStore helper anchor not found")
+    text = text.replace(anchor, helper + anchor)
+store.write_text(text, encoding="utf-8")
+
+# One support email only.
+about = root / "app/src/main/java/com/kartik/bloom/AboutPrivacyActivity.kt"
+text = about.read_text(encoding="utf-8")
+text = text.replace("Version 1.3.0", "Version 1.4.1").replace("Version 1.4.0", "Version 1.4.1")
+text = text.replace("Bloom 1.3.0", "Bloom 1.4.1").replace("Bloom 1.4.0", "Bloom 1.4.1")
+text = text.replace("Public support: KynureLabs.dev@gmail.com\\nDeveloper account: KynureLabs.dev@gmail.com", "KynureLabs.dev@gmail.com")
+about.write_text(text, encoding="utf-8")
+
+privacy = root / "PRIVACY_POLICY.md"
+text = privacy.read_text(encoding="utf-8")
+text = text.replace("Bloom 1.3.0", "Bloom 1.4.1").replace("Bloom 1.4.0", "Bloom 1.4.1")
+text = text.replace("Public support: **KynureLabs.dev@gmail.com**  \nDeveloper account: **KynureLabs.dev@gmail.com**", "Support: **KynureLabs.dev@gmail.com**")
+privacy.write_text(text, encoding="utf-8")
+
+# Regression test for bug #3.
+tests = root / "app/src/test/java/com/kartik/bloom/TaskLogicTest.kt"
+if tests.exists():
+    t = tests.read_text(encoding="utf-8")
+    if "visibleTodayTasks_onlyReturnsUnfinishedTasksDueToday" not in t:
+        insert = '''
+    @Test
+    fun visibleTodayTasks_onlyReturnsUnfinishedTasksDueToday() {
+        val today = LocalDate.of(2026, 9, 13)
+        val todayOpen = task(1, Priority.HIGH, today.toString(), 30)
+        val todayDone = todayOpen.copy(id = 2, done = true)
+        val future = todayOpen.copy(id = 3, due = today.plusDays(1).toString())
+        val overdue = todayOpen.copy(id = 4, due = today.minusDays(1).toString())
+
+        val result = visibleTodayTasks(listOf(todayOpen, todayDone, future, overdue), today)
+
+        assertEquals(listOf(1L), result.map { it.id })
+    }
+'''
+        pos = t.rfind("\n}")
+        if pos < 0:
+            raise RuntimeError("Test class closing brace not found")
+        t = t[:pos] + insert + t[pos:]
+        tests.write_text(t, encoding="utf-8")
+
+# Artifact names.
+for wf in [Path(".github/workflows/build-bloom-apk.yml"), Path(".github/workflows/build-bloom-release.yml")]:
+    if wf.exists():
+        text = wf.read_text(encoding="utf-8")
+        text = text.replace("1.3.0", "1.4.1").replace("1.4.0", "1.4.1")
+        text = text.replace("KartikLabs", "KynureLabs")
+        wf.write_text(text, encoding="utf-8")
+
+print("Bloom 1.4.1 fixes applied")
