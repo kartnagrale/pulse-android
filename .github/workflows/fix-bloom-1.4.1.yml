@@ -29,3 +29,4 @@ jobs:
           git diff --cached --check
           git commit -m "Keep completed Bloom tasks visible in Calendar"
           git push
+# retry with current Calendar ordering
