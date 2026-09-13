@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "com.kartik.bloom"
+    namespace = "com.kartiklabs.bloom"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.kartik.bloom"
+        applicationId = "com.kartiklabs.bloom"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
     }
 
     compileOptions {
