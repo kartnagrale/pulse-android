@@ -490,7 +490,7 @@ private fun CalendarScreen(modifier: Modifier, tasks: List<BloomTask>, onDateAdd
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMM")), fontSize = 19.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton({ onDateAdd(selected) }) { Text("+ Add") } }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-            val dayTasks = tasks.filter { it.due == selected.toString() }.sortedByDescending { smartTaskScore(it, selected) }
+            val dayTasks = tasks.filter { it.due == selected.toString() || it.lastCompleted == selected.toString() }.distinctBy { it.id }.sortedByDescending { smartTaskScore(it, selected) }
             if (dayTasks.isEmpty()) item { Text("No tasks. Protect this space or add something meaningful.", color = MaterialTheme.colorScheme.onSurface.copy(.55f), modifier = Modifier.padding(top = 16.dp)) }
             items(dayTasks) { t -> Card(Modifier.fillMaxWidth().clickable { onEdit(t) }, shape = RoundedCornerShape(16.dp)) { Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) { PriorityPill(t.priority); Text(formatTaskTime(t.time), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp)); Column(Modifier.padding(start = 12.dp).weight(1f)) { Text(t.title); Text(formatDuration(t.estimatedMinutes), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(.55f)) } } } }
         }
