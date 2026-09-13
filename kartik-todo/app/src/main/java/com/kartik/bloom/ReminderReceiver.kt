@@ -1,4 +1,4 @@
-package com.kartik.bloom
+package com.kartiklabs.bloom
 
 import android.Manifest
 import android.app.PendingIntent
@@ -44,7 +44,8 @@ class ReminderReceiver : BroadcastReceiver() {
             else -> "Coming up • $dueTime"
         }
         val recurrenceText = task?.let { if (it.recurrence == Recurrence.NONE) "" else " • ${recurrenceLabel(it)}" } ?: ""
-        val body = timingText + recurrenceText + if (notes.isNotBlank()) "\n$notes" else ""
+        val detailText = task?.let { " • ${it.priority.label} • ${it.estimatedMinutes}m" } ?: ""
+        val body = timingText + recurrenceText + detailText + if (notes.isNotBlank()) "\n$notes" else ""
 
         val launch = PendingIntent.getActivity(context, taskId.hashCode(), Intent(context, MainActivity::class.java).putExtra("open_task", taskId), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val builder = NotificationCompat.Builder(context, if (mode == "alarm") ensureAlarmChannel(context) else "bloom_reminders")
@@ -67,10 +68,12 @@ class ReminderReceiver : BroadcastReceiver() {
 
     private fun snoozeIntent(context: Context, taskId: Long, minutes: Long, salt: Int): PendingIntent {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
-            action = ACTION_SNOOZE; putExtra("taskId", taskId); putExtra("minutes", minutes)
+            action = ACTION_SNOOZE
+            putExtra("taskId", taskId)
+            putExtra("minutes", minutes)
         }
         return PendingIntent.getBroadcast(context, taskId.hashCode() xor (9000 + salt), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
-    companion object { const val ACTION_SNOOZE = "com.kartik.bloom.SNOOZE" }
+    companion object { const val ACTION_SNOOZE = "com.kartiklabs.bloom.SNOOZE" }
 }
