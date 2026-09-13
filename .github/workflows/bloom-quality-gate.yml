@@ -1,0 +1,55 @@
+name: Bloom Quality Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kartik-todo/**'
+      - '.github/workflows/bloom-quality-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kartik-todo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Run unit tests
+        run: gradle testDebugUnitTest --stacktrace
+
+      - name: Run Android lint
+        run: gradle lintDebug --stacktrace
+
+      - name: Build installable APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Build release bundle
+        run: gradle bundleRelease --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bloom-quality-reports
+          path: |
+            kartik-todo/app/build/reports/
+            kartik-todo/app/build/test-results/
+          if-no-files-found: ignore
