@@ -36,11 +36,11 @@ jobs:
         run: gradle assembleDebug --stacktrace
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ../Bloom-Kartik.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ../Bloom-KartikLabs-v1.3.0.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bloom-Kartik-APK
-          path: Bloom-Kartik.apk
+          name: Bloom-KartikLabs-v1.3.0-APK
+          path: Bloom-KartikLabs-v1.3.0.apk
           if-no-files-found: error
