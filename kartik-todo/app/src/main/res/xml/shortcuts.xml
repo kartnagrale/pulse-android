@@ -7,7 +7,7 @@
         android:shortcutShortLabel="@string/quick_add_shortcut">
         <intent
             android:action="com.kartiklabs.bloom.QUICK_ADD"
-            android:targetPackage="com.kartiklabs.bloom"
+            android:targetPackage="com.kynurelabs.bloom"
             android:targetClass="com.kartiklabs.bloom.MainActivity" />
     </shortcut>
     <shortcut
@@ -17,7 +17,7 @@
         android:shortcutShortLabel="@string/about_privacy_shortcut">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.kartiklabs.bloom"
+            android:targetPackage="com.kynurelabs.bloom"
             android:targetClass="com.kartiklabs.bloom.AboutPrivacyActivity" />
     </shortcut>
 </shortcuts>
