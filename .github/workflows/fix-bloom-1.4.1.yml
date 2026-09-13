@@ -25,7 +25,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kartik-todo .github/workflows/build-bloom-apk.yml .github/workflows/build-bloom-release.yml
+          git add kartik-todo
           git diff --cached --check
           git commit -m "Fix Bloom 1.4.1 Today UI and Kynure Labs support"
           git push
