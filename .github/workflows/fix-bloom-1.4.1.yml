@@ -18,14 +18,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply fixes
-        run: python scripts/fix_bloom_141.py
+      - name: Apply calendar completion fix
+        run: python scripts/fix_calendar_completed_141.py
 
-      - name: Commit fixes
+      - name: Commit fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kartik-todo
+          git add kartik-todo/app/src/main/java/com/kartik/bloom/MainActivity.kt
           git diff --cached --check
-          git commit -m "Fix Bloom 1.4.1 Today UI and Kynure Labs support"
+          git commit -m "Keep completed Bloom tasks visible in Calendar"
           git push
