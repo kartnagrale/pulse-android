@@ -39,11 +39,11 @@ jobs:
         run: gradle assembleDebug --stacktrace
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk ../Bloom-KynureLabs-v1.4.0.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk ../Bloom-KynureLabs-v1.4.1.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Bloom-KynureLabs-v1.4.0-APK
-          path: Bloom-KynureLabs-v1.4.0.apk
+          name: Bloom-KynureLabs-v1.4.1-APK
+          path: Bloom-KynureLabs-v1.4.1.apk
           if-no-files-found: error
