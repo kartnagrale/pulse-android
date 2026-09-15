@@ -149,12 +149,18 @@ fun BloomApp(startQuickAdd: Boolean = false) {
             addHistory(context, HistoryEvent(taskId = task.id, title = task.title, action = if (complete) "Completed" else "Reopened"))
         } else {
             val today = LocalDate.now()
-            val due = runCatching { LocalDate.parse(task.due) }.getOrDefault(today)
-            val base = if (due.isBefore(today)) today else due
-            val next = nextOccurrence(base, task)
-            tasks[i] = task.copy(due = next.toString(), done = false, lastCompleted = today.toString(), subtasks = task.subtasks.map { it.copy(done = false) })
-            addHistory(context, HistoryEvent(taskId = task.id, title = task.title, action = "Completed", detail = "Next: $next"))
-            scheduleTaskReminder(context, tasks[i])
+            val completedToday = isTaskCompletedOnDate(task, today)
+            if (completedToday) {
+                // Re-open only today's occurrence. The recurring rule itself remains intact.
+                tasks[i] = task.copy(due = today.toString(), done = false, lastCompleted = "", subtasks = task.subtasks.map { it.copy(done = false) })
+                addHistory(context, HistoryEvent(taskId = task.id, title = task.title, action = "Reopened", detail = "Occurrence: $today"))
+                scheduleTaskReminder(context, tasks[i])
+            } else {
+                val next = nextOccurrence(today, task)
+                tasks[i] = task.copy(due = next.toString(), done = false, lastCompleted = today.toString(), subtasks = task.subtasks.map { it.copy(done = false) })
+                addHistory(context, HistoryEvent(taskId = task.id, title = task.title, action = "Completed", detail = "Occurrence: $today · Next: $next"))
+                scheduleTaskReminder(context, tasks[i])
+            }
         }
         persist()
     }
@@ -291,19 +297,21 @@ private fun TodayScreen(
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("All") }
     var status by remember { mutableStateOf("Open") }
-    val todayOpenTasks = visibleTodayTasks(tasks, today)
-    val filtered = todayOpenTasks.filter { t ->
+    val todayTasks = visibleTodayTasks(tasks, today)
+    val now = LocalTime.now()
+    val filtered = todayTasks.filter { t ->
         val matchesQuery = query.isBlank() || t.title.contains(query, true) || t.notes.contains(query, true) || t.subtasks.any { it.title.contains(query, true) }
         val matchesCategory = category == "All" || t.category == category
+        val completed = isTaskCompletedOnDate(t, today)
+        val taskTime = runCatching { LocalTime.parse(t.time) }.getOrDefault(LocalTime.MAX)
         val matchesStatus = when (status) {
-            "Recurring" -> t.recurrence != Recurrence.NONE
-            "Done", "Overdue" -> false
-            else -> true
+            "Done" -> completed
+            "Overdue" -> !completed && taskTime.isBefore(now)
+            else -> !completed
         }
         matchesQuery && matchesCategory && matchesStatus
     }.sortedWith(compareByDescending<BloomTask> { smartTaskScore(it, today) }.thenBy { it.time })
-    val todayTasks = tasks.filter { it.due == today.toString() }
-    val doneToday = todayTasks.count { it.done || it.lastCompleted == today.toString() }
+    val doneToday = todayTasks.count { isTaskCompletedOnDate(it, today) }
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp, 14.dp, 18.dp, 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -324,7 +332,7 @@ private fun TodayScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Open", "Overdue", "Recurring", "Done").forEach { s ->
+                    listOf("Open", "Overdue", "Done").forEach { s ->
                         FilterChip(
                             selected = status == s,
                             onClick = { status = s },
@@ -337,14 +345,17 @@ private fun TodayScreen(
             }
         }
         item { Text(if (filtered.isEmpty()) "Nothing demanding your attention 🌷" else "${filtered.size} tasks", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
-        items(filtered, key = { it.id }) { TaskCard(it, onToggle, onEdit, onDelete, onTaskUpdate, onFocus) }
+        items(filtered, key = { it.id }) { task ->
+            val displayTask = task.copy(done = isTaskCompletedOnDate(task, today))
+            TaskCard(displayTask, onToggle, onEdit, onDelete, onTaskUpdate, onFocus)
+        }
     }
 }
 
 @Composable
 private fun SmartPlanCard(tasks: List<BloomTask>, onFocus: (BloomTask) -> Unit) {
     val today = LocalDate.now()
-    val actionable = visibleTodayTasks(tasks, today)
+    val actionable = visibleTodayTasks(tasks, today).filter { !isTaskCompletedOnDate(it, today) }
     val plan = actionable.sortedByDescending { smartTaskScore(it, today) }.take(3)
     val minutes = actionable.sumOf { it.estimatedMinutes }
     val overload = minutes > 8 * 60
@@ -481,7 +492,7 @@ private fun CalendarScreen(modifier: Modifier, tasks: List<BloomTask>, onDateAdd
         LazyVerticalGrid(GridCells.Fixed(7), modifier = Modifier.height(290.dp), userScrollEnabled = false) {
             items(cells) { date ->
                 if (date == null) Spacer(Modifier.size(40.dp)) else {
-                    val count = tasks.count { it.due == date.toString() && !it.done }
+                    val count = visibleTodayTasks(tasks, date).count { !isTaskCompletedOnDate(it, date) }
                     Box(Modifier.padding(3.dp).aspectRatio(1f).clip(CircleShape).background(if (selected == date) MaterialTheme.colorScheme.primary else Color.Transparent).clickable { selected = date }, contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("${date.dayOfMonth}", color = if (selected == date) Color.White else MaterialTheme.colorScheme.onSurface); if (count > 0) Text("•", color = if (selected == date) Color.White else MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
                     }
@@ -490,7 +501,7 @@ private fun CalendarScreen(modifier: Modifier, tasks: List<BloomTask>, onDateAdd
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMM")), fontSize = 19.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton({ onDateAdd(selected) }) { Text("+ Add") } }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-            val dayTasks = tasks.filter { it.due == selected.toString() || it.lastCompleted == selected.toString() }.distinctBy { it.id }.sortedByDescending { smartTaskScore(it, selected) }
+            val dayTasks = visibleTodayTasks(tasks, selected).distinctBy { it.id }.sortedByDescending { smartTaskScore(it, selected) }
             if (dayTasks.isEmpty()) item { Text("No tasks. Protect this space or add something meaningful.", color = MaterialTheme.colorScheme.onSurface.copy(.55f), modifier = Modifier.padding(top = 16.dp)) }
             items(dayTasks) { t -> Card(Modifier.fillMaxWidth().clickable { onEdit(t) }, shape = RoundedCornerShape(16.dp)) { Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) { PriorityPill(t.priority); Text(formatTaskTime(t.time), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp)); Column(Modifier.padding(start = 12.dp).weight(1f)) { Text(t.title); Text(formatDuration(t.estimatedMinutes), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(.55f)) } } } }
         }

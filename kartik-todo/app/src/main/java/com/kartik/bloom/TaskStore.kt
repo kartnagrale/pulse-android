@@ -105,8 +105,40 @@ fun nextOccurrence(date: LocalDate, task: BloomTask): LocalDate {
     return if (end != null && next.isAfter(end)) date else next
 }
 
+fun isTaskCompletedOnDate(task: BloomTask, date: LocalDate): Boolean =
+    if (task.recurrence == Recurrence.NONE) task.done && task.due == date.toString()
+    else task.lastCompleted == date.toString()
+
+/** True when the recurring rule produces an occurrence on [date]. */
+fun isTaskScheduledForDate(task: BloomTask, date: LocalDate): Boolean {
+    val anchor = runCatching { LocalDate.parse(task.due) }.getOrNull() ?: return false
+    val end = runCatching { LocalDate.parse(task.repeatEnd) }.getOrNull()
+    if (end != null && date.isAfter(end)) return false
+    if (date.isBefore(anchor)) return false
+    if (date == anchor) return true
+    if (task.recurrence == Recurrence.NONE) return false
+
+    if (task.recurrence == Recurrence.CUSTOM && task.weekdays.isNotEmpty()) {
+        return task.weekdays.contains(date.dayOfWeek.value)
+    }
+
+    var occurrence = anchor
+    repeat(5000) {
+        val next = nextOccurrence(occurrence, task)
+        if (next == occurrence) return false
+        occurrence = next
+        if (occurrence == date) return true
+        if (occurrence.isAfter(date)) return false
+    }
+    return false
+}
+
+/**
+ * Occurrences for a day, including a completed occurrence whose recurring template
+ * has already advanced to its next due date.
+ */
 fun visibleTodayTasks(tasks: List<BloomTask>, today: LocalDate = LocalDate.now()): List<BloomTask> =
-    tasks.filter { task -> !task.done && task.due == today.toString() }
+    tasks.filter { task -> isTaskScheduledForDate(task, today) || task.lastCompleted == today.toString() }
 
 fun smartTaskScore(task: BloomTask, today: LocalDate = LocalDate.now()): Int {
     val due = runCatching { LocalDate.parse(task.due) }.getOrDefault(today)
